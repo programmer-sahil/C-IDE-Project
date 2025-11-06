@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sleek AI C++ IDE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&family=Inter:wght@400;700&display=swap');
+        
+        :root {
+            /* Core Theme Colors */
+            --bg-dark: #0A0A0A;
+            --panel-bg: #1C1C1E;
+            --accent-main: #FF7043; /* Adjusted accent for C++ to a soft orange/coral */
+            --accent-glow: rgba(255, 112, 67, 0.5); 
+            --text-light: #E0E0E0;
+            --output-bg: #0C0C0C;
+            --error-color: #FF6B6B;
+            --success-color: #4CAF50;
+        }
+
+        /* General Styling */
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Editor/Console Font */
+        .editor-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Scrollbar Hiding (for aesthetics) */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Custom focus glow effect */
+        .glow-focus:focus-within {
+            box-shadow: 0 0 10px var(--accent-glow);
+            border-color: var(--accent-main);
+        }
+        
+        /* Editor specific styling */
+        #code-editor {
+            background-color: var(--panel-bg);
+            border: 1px solid #333;
+            transition: box-shadow 0.3s, border-color 0.3s;
+            line-height: 1.5;
+        }
+
+        /* Output specific styling */
+        #output-console {
+            background-color: var(--output-bg);
+            border: 1px solid #333;
+            transition: box-shadow 0.3s;
+        }
+
+        /* Button styling with glow */
+        .run-button {
+            background-color: var(--accent-main);
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .run-button:hover {
+            background-color: #E65100; /* Darker shade of orange */
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8 flex flex-col">
+    <!-- Load Tailwind Configuration for custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-bg': 'var(--bg-dark)',
+                        'panel-bg': 'var(--panel-bg)',
+                        'accent-orange': 'var(--accent-main)',
+                        'output-bg': 'var(--output-bg)',
+                        'error-text': 'var(--error-color)',
+                        'success-text': 'var(--success-color)',
+                        'text-light': 'var(--text-light)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <header class="mb-6 text-center lg:text-left">
+        <h1 class="text-4xl font-extrabold text-accent-orange tracking-wider">
+            AI CodeSandbox (C++)
+        </h1>
+        <p class="text-sm text-gray-400 mt-1">C++ Execution | Made by NYCTA Developer Community</p>
+    </header>
+
+    <div class="flex-grow flex flex-col lg:flex-row gap-8">
+        <!-- Code Editor Panel (Main Area) -->
+        <div class="w-full lg:w-3/5 flex flex-col h-full glow-focus rounded-xl shadow-2xl">
+            <label for="code-editor" class="text-xl font-bold mb-2 text-text-light">C++ Editor</label>
+            <textarea id="code-editor" class="editor-font flex-grow resize-none p-5 rounded-xl text-text-light text-base focus:outline-none" spellcheck="false" placeholder="Write your C++ code here...">
+#include <iostream>
+
+int main() {
+    std::cout << "hello software developers!" << std::endl;
+    return 0;
+}
+            </textarea>
+            
+            <!-- Action Buttons -->
+            <div class="flex gap-4 mt-4">
+                <button id="run-button" class="run-button w-full px-6 py-3 rounded-xl text-primary-bg font-bold shadow-lg focus:outline-none focus:ring-4 focus:ring-accent-orange focus:ring-opacity-50 flex items-center justify-center transition-all duration-300" onclick="runCode()">
+                    <svg id="run-icon" class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                    </svg>
+                    <svg id="loading-spinner" class="animate-spin w-5 h-5 mr-2 text-primary-bg hidden" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="run-text">Run Code</span>
+                </button>
+                <button id="clear-button" class="w-1/3 px-4 py-3 bg-gray-600 hover:bg-gray-700 transition duration-200 rounded-xl text-text-light font-semibold focus:outline-none" onclick="clearOutput()">
+                    Clear Console
+                </button>
+            </div>
+        </div>
+
+        <!-- Output Console Panel -->
+        <div class="w-full lg:w-2/5 flex flex-col h-full">
+            <label for="output-console" class="text-xl font-bold mb-2 text-text-light">Console</label>
+            <pre id="output-console" class="editor-font flex-grow p-5 rounded-xl shadow-inner text-text-light overflow-auto whitespace-pre-wrap text-sm leading-relaxed hide-scrollbar border border-gray-700">
+> IDE Initialized for C++. Enter your code and hit Run.
+            </pre>
+        </div>
+    </div>
+
+    <!-- JavaScript for API interaction and UI logic -->
+    <script>
+        // Global variables provided by the environment
+        const apiKey = ""; 
+        
+        // --- Firebase Setup (Required boilerplate, though not used for state in this app) ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const initializeApp = (config) => ({ /* mock app */ });
+        const getAuth = (app) => ({ /* mock auth */ });
+        const getFirestore = (app) => ({ /* mock db */ });
+        const signInWithCustomToken = (auth, token) => { console.log('Mock signing in with token.'); };
+        const signInAnonymously = (auth) => { console.log('Mock signing in anonymously.'); };
+
+        let app, db, auth;
+        function initializeFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                }
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+            }
+        }
+        initializeFirebase();
+        // ----------------------------------------------------------------------------------
+
+        // Constants
+        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const MAX_RETRIES = 5;
+        
+        // UI Elements
+        const editor = document.getElementById('code-editor');
+        const outputConsole = document.getElementById('output-console');
+        const runButton = document.getElementById('run-button');
+        const runIcon = document.getElementById('run-icon');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const runText = document.getElementById('run-text');
+
+        // State
+        let isRunning = false;
+
+        /**
+         * Updates the UI to show the loading state.
+         */
+        function setLoading(isLoading) {
+            isRunning = isLoading;
+            runButton.disabled = isLoading;
+            runIcon.classList.toggle('hidden', isLoading);
+            loadingSpinner.classList.toggle('hidden', !isLoading);
+            runText.textContent = isLoading ? 'Executing...' : 'Run Code';
+            runButton.classList.toggle('opacity-50', isLoading);
+        }
+
+        /**
+         * Clears the output and displays a status message.
+         * @param {string} message The message to display.
+         * @param {string} colorClass Tailwind CSS class for text color.
+         */
+        function displayStatus(message, colorClass = 'text-text-light') {
+            outputConsole.textContent = message;
+            // Reset base classes and apply dynamic color
+            outputConsole.className = `editor-font flex-grow p-5 rounded-xl shadow-inner overflow-auto whitespace-pre-wrap text-sm leading-relaxed hide-scrollbar border border-gray-700 bg-output-bg ${colorClass}`;
+        }
+
+        /**
+         * Clears the output console.
+         */
+        function clearOutput() {
+            displayStatus("> Console cleared. Ready for the next run.");
+        }
+
+
+        /**
+         * Makes a fetch request with exponential backoff for retries.
+         * @param {string} url The API endpoint URL.
+         * @param {object} options Fetch options (method, headers, body).
+         * @param {number} attempt Current retry attempt count.
+         * @returns {Promise<Response>} The response object from the successful fetch.
+         */
+        async function fetchWithRetry(url, options, attempt = 1) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    // Check for specific error status codes (e.g., 429 Too Many Requests)
+                    if (response.status === 429 && attempt < MAX_RETRIES) {
+                        throw new Error("Rate limit exceeded (429). Will retry.");
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response;
+            } catch (error) {
+                if (attempt < MAX_RETRIES) {
+                    const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                    console.warn(`Request failed (Attempt ${attempt}/${MAX_RETRIES}). Retrying in ${delay / 1000}s...`, error.message);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, attempt + 1);
+                } else {
+                    throw new Error(`API request failed after ${MAX_RETRIES} attempts. Last error: ${error.message}`);
+                }
+            }
+        }
+
+        /**
+         * Executes the C++ code using the Gemini API.
+         */
+        async function runCode() {
+            if (isRunning) return;
+
+            const userCode = editor.value.trim();
+            if (!userCode) {
+                displayStatus("Code editor is empty. Please enter C++ code.", 'text-error-text');
+                return;
+            }
+
+            setLoading(true);
+            displayStatus(`> Compiling and Executing C++... Please wait for the AI environment to finish.`, 'text-accent-orange');
+            
+            // System instruction specifically for C++ compilation and execution
+            const systemPrompt = "You are a C++ execution environment. You must compile the following C++ code using a modern compiler (like g++ or clang) and then execute it. Return the exact output (stdout). If there are compilation or runtime errors, return the complete, verbatim error message (e.g., g++ compilation failure message or a runtime error stack trace). Do not add any explanation, introductory conversational text, or wrappers (like markdown fences) around the output, only the raw output or error traceback.";
+
+            const userQuery = `C++ Code:\n${userCode}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            try {
+                const response = await fetchWithRetry(GEMINI_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "Execution finished, but no output was returned.";
+
+                // Check if the output looks like an error
+                const isError = text.toLowerCase().includes('error:') || text.toLowerCase().includes('compilation failed') || text.toLowerCase().includes('exception');
+
+                // Adjust console styling based on success or error
+                const colorClass = isError ? 'text-error-text' : 'text-success-text';
+                displayStatus(text, colorClass); 
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                displayStatus(`> API Execution Failed: ${error.message}. This may be a network issue or an API rate limit.`, 'text-error-color');
+            } finally {
+                setLoading(false);
+            }
+        }
+    </script>
+</body>
+</html>
